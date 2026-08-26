@@ -39,8 +39,8 @@ export default function Dashboard({
         api.stats.getDashboard(),
         api.tasks.getMyTasks()
       ]);
-      setStats(dashData);
-      setMyTasks(tasksData || []);
+      setStats(dashData && typeof dashData === 'object' ? dashData : null);
+      setMyTasks(Array.isArray(tasksData) ? tasksData : []);
     } catch (err) {
       console.error('Error loading dashboard:', err);
       showToast('Could not load dashboard metrics', 'error');
@@ -63,6 +63,10 @@ export default function Dashboard({
   }
 
   const overdueCount = stats?.overdue_tasks || 0;
+  const projectList = Array.isArray(stats?.projects) ? stats.projects : [];
+  const deadlinesList = Array.isArray(stats?.upcoming_deadlines) ? stats.upcoming_deadlines : [];
+  const activityList = Array.isArray(stats?.recent_activity) ? stats.recent_activity : [];
+  const assignedTasks = Array.isArray(myTasks) ? myTasks : [];
 
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-8">
@@ -201,7 +205,7 @@ export default function Dashboard({
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">
-              Active Projects ({stats?.projects?.length || 0})
+              Active Projects ({projectList.length})
             </h3>
             <button
               onClick={onOpenCreateProject}
@@ -212,7 +216,7 @@ export default function Dashboard({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {stats?.projects?.map((proj) => (
+            {projectList.map((proj) => (
               <div
                 key={proj.id}
                 onClick={() => onOpenProject(proj.id)}
@@ -243,13 +247,13 @@ export default function Dashboard({
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-400 font-medium">Progress</span>
-                    <span className="font-bold text-indigo-400">{proj.progress_percent}%</span>
+                    <span className="font-bold text-indigo-400">{proj.progress_percent || 0}%</span>
                   </div>
                   <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-300"
                       style={{
-                        width: `${proj.progress_percent}%`,
+                        width: `${proj.progress_percent || 0}%`,
                         backgroundColor: proj.color || '#6366F1'
                       }}
                     />
@@ -277,12 +281,12 @@ export default function Dashboard({
           </h3>
 
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-md">
-            {stats?.upcoming_deadlines?.length === 0 ? (
+            {deadlinesList.length === 0 ? (
               <p className="text-xs text-slate-400 italic py-4 text-center">
                 No upcoming deadlines on schedule!
               </p>
             ) : (
-              stats?.upcoming_deadlines?.map((task) => (
+              deadlinesList.map((task) => (
                 <div
                   key={task.id}
                   onClick={() => onOpenTask(task.id)}
@@ -318,17 +322,17 @@ export default function Dashboard({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">
-              My Assigned Tasks ({myTasks.length})
+              My Assigned Tasks ({assignedTasks.length})
             </h3>
           </div>
 
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2.5 shadow-md">
-            {myTasks.length === 0 ? (
+            {assignedTasks.length === 0 ? (
               <p className="text-xs text-slate-400 italic py-6 text-center">
                 You have no pending assigned tasks.
               </p>
             ) : (
-              myTasks.slice(0, 5).map((t) => (
+              assignedTasks.slice(0, 5).map((t) => (
                 <div
                   key={t.id}
                   onClick={() => onOpenTask(t.id)}
@@ -341,10 +345,11 @@ export default function Dashboard({
                     />
                     <div className="min-w-0">
                       <p
-                        className={`text-xs font-bold truncate ${t.status === 'completed'
+                        className={`text-xs font-bold truncate ${
+                          t.status === 'completed'
                             ? 'line-through text-slate-400'
                             : 'text-slate-100'
-                          }`}
+                        }`}
                       >
                         {t.title}
                       </p>
@@ -369,12 +374,12 @@ export default function Dashboard({
           </h3>
 
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-md max-h-[380px] overflow-y-auto">
-            {stats?.recent_activity?.length === 0 ? (
+            {activityList.length === 0 ? (
               <p className="text-xs text-slate-400 italic py-6 text-center">
                 No recent activity logged yet.
               </p>
             ) : (
-              stats?.recent_activity?.map((act) => (
+              activityList.map((act) => (
                 <div
                   key={act.id}
                   className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-800/30 border border-slate-800/60"
@@ -404,4 +409,3 @@ export default function Dashboard({
     </div>
   );
 }
-

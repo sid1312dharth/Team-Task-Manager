@@ -36,7 +36,7 @@ export default function MyTasks({ onOpenTask }) {
   const loadMyTasks = async () => {
     try {
       const data = await api.tasks.getMyTasks();
-      setTasks(data || []);
+      setTasks(Array.isArray(data) ? data : []);
     } catch (err) {
       showToast('Error loading your tasks', 'error');
     } finally {
@@ -52,7 +52,7 @@ export default function MyTasks({ onOpenTask }) {
     e.stopPropagation();
     const nextStatus = task.status === 'completed' ? 'todo' : 'completed';
     setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, status: nextStatus } : t))
+      Array.isArray(prev) ? prev.map((t) => (t.id === task.id ? { ...t, status: nextStatus } : t)) : []
     );
 
     try {
@@ -70,10 +70,11 @@ export default function MyTasks({ onOpenTask }) {
 
   // Date calculations
   const todayStr = new Date().toISOString().split('T')[0];
+  const taskList = Array.isArray(tasks) ? tasks : [];
 
-  const filteredTasks = tasks.filter((t) => {
+  const filteredTasks = taskList.filter((t) => {
     const matchesSearch =
-      t.title.toLowerCase().includes(search.toLowerCase()) ||
+      (t.title || '').toLowerCase().includes(search.toLowerCase()) ||
       (t.project_name && t.project_name.toLowerCase().includes(search.toLowerCase()));
 
     if (!matchesSearch) return false;
@@ -113,10 +114,11 @@ export default function MyTasks({ onOpenTask }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${activeTab === tab.id
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                activeTab === tab.id
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                }`}
+              }`}
             >
               {tab.label}
             </button>
@@ -164,10 +166,11 @@ export default function MyTasks({ onOpenTask }) {
                 <button
                   type="button"
                   onClick={(e) => handleToggleComplete(e, t)}
-                  className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${t.status === 'completed'
+                  className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
+                    t.status === 'completed'
                       ? 'bg-emerald-500 border-emerald-500 text-white'
                       : 'border-slate-600 hover:border-indigo-400 text-transparent'
-                    }`}
+                  }`}
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 fill-current" />
                 </button>
@@ -185,8 +188,9 @@ export default function MyTasks({ onOpenTask }) {
                   </div>
 
                   <p
-                    className={`text-sm font-bold truncate group-hover:text-indigo-300 transition-colors ${t.status === 'completed' ? 'line-through text-slate-400' : 'text-slate-100'
-                      }`}
+                    className={`text-sm font-bold truncate group-hover:text-indigo-300 transition-colors ${
+                      t.status === 'completed' ? 'line-through text-slate-400' : 'text-slate-100'
+                    }`}
                   >
                     {t.title}
                   </p>
@@ -207,4 +211,3 @@ export default function MyTasks({ onOpenTask }) {
     </div>
   );
 }
-

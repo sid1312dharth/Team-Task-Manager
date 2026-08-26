@@ -70,9 +70,9 @@ export default function ProjectWorkspace({
         api.tasks.listByProject(projectId),
         api.projects.getActivity(projectId).catch(() => [])
       ]);
-      setProject(projData);
-      setTasks(tasksData || []);
-      setActivity(actData || []);
+      setProject(projData && typeof projData === 'object' ? projData : null);
+      setTasks(Array.isArray(tasksData) ? tasksData : []);
+      setActivity(Array.isArray(actData) ? actData : []);
     } catch (err) {
       showToast(err.message || 'Error loading project workspace', 'error');
     } finally {
@@ -93,7 +93,7 @@ export default function ProjectWorkspace({
 
     // Optimistic update
     setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t))
+      Array.isArray(prev) ? prev.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t)) : []
     );
 
     try {
@@ -106,9 +106,13 @@ export default function ProjectWorkspace({
     }
   };
 
-  const filteredTasks = tasks.filter((t) => {
+  const taskList = Array.isArray(tasks) ? tasks : [];
+  const memberList = Array.isArray(project?.members) ? project.members : [];
+  const activityList = Array.isArray(activity) ? activity : [];
+
+  const filteredTasks = taskList.filter((t) => {
     const matchesSearch =
-      t.title.toLowerCase().includes(search.toLowerCase()) ||
+      (t.title || '').toLowerCase().includes(search.toLowerCase()) ||
       (t.description && t.description.toLowerCase().includes(search.toLowerCase()));
 
     const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
@@ -143,8 +147,8 @@ export default function ProjectWorkspace({
   }
 
   const isProjectAdmin = project.user_role === 'Admin' || (user && Number(project.owner_id) === Number(user.id));
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter((t) => t.status === 'completed').length;
+  const totalTasks = taskList.length;
+  const completedTasks = taskList.filter((t) => t.status === 'completed').length;
   const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
@@ -165,10 +169,11 @@ export default function ProjectWorkspace({
                 {project.category || 'General'}
               </span>
               <span
-                className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold border ${isProjectAdmin
+                className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold border ${
+                  isProjectAdmin
                     ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                     : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                  }`}
+                }`}
               >
                 {project.user_role || 'Member'}
               </span>
@@ -188,7 +193,7 @@ export default function ProjectWorkspace({
               className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
             >
               <Users className="w-4 h-4 text-slate-400" />
-              <span>Team ({project.members?.length || 0})</span>
+              <span>Team ({memberList.length})</span>
             </button>
 
             <button
@@ -225,7 +230,7 @@ export default function ProjectWorkspace({
           <div className="flex items-center gap-2">
             <span className="text-slate-400 text-[11px] font-medium">Team:</span>
             <div className="flex -space-x-2">
-              {project.members?.slice(0, 5).map((m) => (
+              {memberList.slice(0, 5).map((m) => (
                 <UserAvatar
                   key={m.user_id || m.id}
                   name={m.name}
@@ -235,9 +240,9 @@ export default function ProjectWorkspace({
                   roleTitle={m.role}
                 />
               ))}
-              {project.members?.length > 5 && (
+              {memberList.length > 5 && (
                 <div className="w-7 h-7 rounded-full bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-bold flex items-center justify-center">
-                  +{project.members.length - 5}
+                  +{memberList.length - 5}
                 </div>
               )}
             </div>
@@ -251,10 +256,11 @@ export default function ProjectWorkspace({
         <div className="flex items-center gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-2xl w-fit">
           <button
             onClick={() => setActiveTab('kanban')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'kanban'
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'kanban'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-400 hover:text-slate-200'
-              }`}
+            }`}
           >
             <FolderKanban className="w-4 h-4" />
             <span>Kanban Board</span>
@@ -262,10 +268,11 @@ export default function ProjectWorkspace({
 
           <button
             onClick={() => setActiveTab('list')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'list'
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'list'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-400 hover:text-slate-200'
-              }`}
+            }`}
           >
             <ListFilter className="w-4 h-4" />
             <span>List View</span>
@@ -273,21 +280,23 @@ export default function ProjectWorkspace({
 
           <button
             onClick={() => setActiveTab('members')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'members'
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'members'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-400 hover:text-slate-200'
-              }`}
+            }`}
           >
             <Users className="w-4 h-4" />
-            <span>Team ({project.members?.length || 0})</span>
+            <span>Team ({memberList.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('activity')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'activity'
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'activity'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-400 hover:text-slate-200'
-              }`}
+            }`}
           >
             <Activity className="w-4 h-4" />
             <span>Activity</span>
@@ -329,7 +338,7 @@ export default function ProjectWorkspace({
               className="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 focus:outline-hidden focus:border-indigo-500"
             >
               <option value="all">All Assignees</option>
-              {project.members?.map((m) => (
+              {memberList.map((m) => (
                 <option key={m.user_id || m.id} value={m.user_id || m.id}>
                   {m.name}
                 </option>
@@ -545,7 +554,7 @@ export default function ProjectWorkspace({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">
-              Project Team Roster ({project.members?.length || 0})
+              Project Team Roster ({memberList.length})
             </h3>
             {isProjectAdmin && (
               <button
@@ -559,7 +568,7 @@ export default function ProjectWorkspace({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {project.members?.map((m) => (
+            {memberList.map((m) => (
               <div
                 key={m.user_id || m.id}
                 className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-md flex items-center gap-4"
@@ -574,10 +583,11 @@ export default function ProjectWorkspace({
                   <div className="flex items-center gap-2">
                     <h4 className="font-bold text-sm text-slate-100 truncate">{m.name}</h4>
                     <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${m.role === 'Admin'
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                        m.role === 'Admin'
                           ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                           : 'bg-slate-800 text-slate-300 border-slate-700'
-                        }`}
+                      }`}
                     >
                       {m.role || 'Member'}
                     </span>
@@ -600,13 +610,13 @@ export default function ProjectWorkspace({
             Project Event Timeline
           </h3>
 
-          {activity.length === 0 ? (
+          {activityList.length === 0 ? (
             <p className="text-xs text-slate-400 italic py-6 text-center">
               No recent activity recorded for this project yet.
             </p>
           ) : (
             <div className="space-y-4">
-              {activity.map((act) => (
+              {activityList.map((act) => (
                 <div
                   key={act.id}
                   className="flex items-start gap-3 p-3 rounded-xl bg-slate-800/40 border border-slate-800/80"
@@ -637,10 +647,9 @@ export default function ProjectWorkspace({
         isOpen={isMembersModalOpen}
         onClose={() => setIsMembersModalOpen(false)}
         projectId={project.id}
-        members={project.members || []}
+        members={memberList}
         onMembersUpdated={loadProjectData}
       />
     </div>
   );
 }
-

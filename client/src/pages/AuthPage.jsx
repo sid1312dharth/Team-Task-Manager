@@ -16,6 +16,13 @@ import { useToast } from '../context/ToastContext';
 import { api } from '../api';
 import UserAvatar from '../components/UserAvatar';
 
+const DEFAULT_DEMO_USERS = [
+  { id: 1, name: 'Alex Rivera', email: 'alex@example.com', avatar_color: '#6366F1', role_title: 'Lead Architect & Admin' },
+  { id: 2, name: 'Sarah Chen', email: 'sarah@example.com', avatar_color: '#EC4899', role_title: 'Senior Frontend Engineer' },
+  { id: 3, name: 'Mike Ross', email: 'mike@example.com', avatar_color: '#10B981', role_title: 'UI/UX Product Designer' },
+  { id: 4, name: 'Elena Rostova', email: 'elena@example.com', avatar_color: '#F59E0B', role_title: 'Backend Lead' }
+];
+
 export default function AuthPage() {
   const { login, signup } = useAuth();
   const { showToast } = useToast();
@@ -28,12 +35,16 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const [demoUsers, setDemoUsers] = useState([]);
+  const [demoUsers, setDemoUsers] = useState(DEFAULT_DEMO_USERS);
 
   useEffect(() => {
     api.auth
       .getDemoUsers()
-      .then((data) => setDemoUsers(data || []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setDemoUsers(data);
+        }
+      })
       .catch(() => { });
   }, []);
 
@@ -69,11 +80,13 @@ export default function AuthPage() {
       await login(demo.email, 'password123');
       showToast(`Logged in as ${demo.name}!`, 'success');
     } catch (err) {
-      showToast(err.message || 'Demo login failed', 'error');
+      showToast(err.message || 'Demo login failed. Is the server running?', 'error');
     } finally {
       setLoading(false);
     }
   };
+
+  const userList = Array.isArray(demoUsers) ? demoUsers : DEFAULT_DEMO_USERS;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden selection:bg-indigo-500 selection:text-white">
@@ -218,7 +231,7 @@ export default function AuthPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {demoUsers.map((demo) => (
+              {userList.map((demo) => (
                 <button
                   key={demo.id}
                   type="button"
@@ -241,4 +254,3 @@ export default function AuthPage() {
     </div>
   );
 }
-

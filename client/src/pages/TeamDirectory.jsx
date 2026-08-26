@@ -16,15 +16,17 @@ export default function TeamDirectory() {
   useEffect(() => {
     api.auth
       .getAllUsers()
-      .then((data) => setUsers(data || []))
+      .then((data) => setUsers(Array.isArray(data) ? data : []))
       .catch(() => showToast('Error loading team directory', 'error'))
       .finally(() => setLoading(false));
   }, []);
 
-  const filteredUsers = users.filter(
+  const userList = Array.isArray(users) ? users : [];
+
+  const filteredUsers = userList.filter(
     (u) =>
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase()) ||
+      (u.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(search.toLowerCase()) ||
       (u.role_title && u.role_title.toLowerCase().includes(search.toLowerCase()))
   );
 
@@ -119,4 +121,3 @@ export default function TeamDirectory() {
     </div>
   );
 }
-

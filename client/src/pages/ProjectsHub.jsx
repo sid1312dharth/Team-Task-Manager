@@ -30,7 +30,7 @@ export default function ProjectsHub({ onOpenProject, onOpenCreateProject }) {
   const loadProjects = async () => {
     try {
       const data = await api.projects.list();
-      setProjects(data || []);
+      setProjects(Array.isArray(data) ? data : []);
     } catch (err) {
       showToast('Error loading projects list', 'error');
     } finally {
@@ -48,16 +48,18 @@ export default function ProjectsHub({ onOpenProject, onOpenCreateProject }) {
 
     try {
       await api.projects.delete(projectId);
-      setProjects((prev) => prev.filter((p) => p.id !== projectId));
+      setProjects((prev) => (Array.isArray(prev) ? prev.filter((p) => p.id !== projectId) : []));
       showToast(`Project "${projectName}" deleted`, 'success');
     } catch (err) {
       showToast(err.message || 'Error deleting project', 'error');
     }
   };
 
-  const filteredProjects = projects.filter((p) => {
+  const projectList = Array.isArray(projects) ? projects : [];
+
+  const filteredProjects = projectList.filter((p) => {
     const matchesSearch =
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      (p.name || '').toLowerCase().includes(search.toLowerCase()) ||
       (p.description && p.description.toLowerCase().includes(search.toLowerCase()));
 
     const matchesCategory =
@@ -97,10 +99,11 @@ export default function ProjectsHub({ onOpenProject, onOpenCreateProject }) {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${selectedCategory === cat
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                selectedCategory === cat
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                }`}
+              }`}
             >
               {cat}
             </button>
@@ -240,4 +243,3 @@ export default function ProjectsHub({ onOpenProject, onOpenCreateProject }) {
     </div>
   );
 }
-

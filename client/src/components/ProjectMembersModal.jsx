@@ -27,13 +27,16 @@ export default function ProjectMembersModal({
     if (isOpen) {
       api.auth
         .getAllUsers()
-        .then((data) => setAllUsers(data || []))
+        .then((data) => setAllUsers(Array.isArray(data) ? data : []))
         .catch(() => { });
     }
   }, [isOpen]);
 
-  const existingUserIds = new Set(members.map((m) => m.user_id || m.id));
-  const availableUsers = allUsers.filter((u) => !existingUserIds.has(u.id));
+  const memberList = Array.isArray(members) ? members : [];
+  const userList = Array.isArray(allUsers) ? allUsers : [];
+
+  const existingUserIds = new Set(memberList.map((m) => m.user_id || m.id));
+  const availableUsers = userList.filter((u) => !existingUserIds.has(u.id));
 
   const handleAddMember = async (e) => {
     e.preventDefault();
@@ -169,11 +172,11 @@ export default function ProjectMembersModal({
         {/* Current Members List */}
         <div>
           <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-            Current Members ({members.length})
+            Current Members ({memberList.length})
           </h4>
 
           <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-            {members.map((m) => {
+            {memberList.map((m) => {
               const uId = m.user_id || m.id;
               const isMe = currentUser && Number(currentUser.id) === Number(uId);
 
@@ -195,10 +198,11 @@ export default function ProjectMembersModal({
                           {m.name} {isMe && '(You)'}
                         </span>
                         <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${m.role === 'Admin'
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                            m.role === 'Admin'
                               ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                               : 'bg-slate-700/50 text-slate-300 border-slate-600/40'
-                            }`}
+                          }`}
                         >
                           {m.role || 'Member'}
                         </span>
@@ -237,4 +241,3 @@ export default function ProjectMembersModal({
     </Modal>
   );
 }
-
