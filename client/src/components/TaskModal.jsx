@@ -75,8 +75,8 @@ export default function TaskModal({
         setAssignedTo(data.assigned_to ? String(data.assigned_to) : '');
         setTags(data.tags || '');
         setEstimatedHours(data.estimated_hours ? String(data.estimated_hours) : '');
-        setSubtasks(data.subtasks || []);
-        setComments(data.comments || []);
+        setSubtasks(Array.isArray(data.subtasks) ? data.subtasks : []);
+        setComments(Array.isArray(data.comments) ? data.comments : []);
       })
       .catch((err) => {
         if (!isMounted) return;
@@ -154,12 +154,12 @@ export default function TaskModal({
 
     try {
       const newSt = await api.subtasks.create(taskId, newSubtaskTitle.trim());
-      setSubtasks((prev) => [...prev, newSt]);
+      setSubtasks((prev) => (Array.isArray(prev) ? [...prev, newSt] : [newSt]));
       setNewSubtaskTitle('');
       if (onTaskUpdated) {
         onTaskUpdated({
           ...task,
-          subtask_count: subtasks.length + 1
+          subtask_count: (Array.isArray(subtasks) ? subtasks.length : 0) + 1
         });
       }
     } catch (err) {
@@ -170,14 +170,16 @@ export default function TaskModal({
   const handleToggleSubtask = async (subtask) => {
     const nextCompleted = subtask.completed ? 0 : 1;
     try {
-      const updatedSt = await api.subtasks.update(taskId, subtask.id, {
+      await api.subtasks.update(taskId, subtask.id, {
         completed: nextCompleted
       });
       setSubtasks((prev) =>
-        prev.map((st) => (st.id === subtask.id ? { ...st, completed: nextCompleted } : st))
+        Array.isArray(prev)
+          ? prev.map((st) => (st.id === subtask.id ? { ...st, completed: nextCompleted } : st))
+          : []
       );
       if (onTaskUpdated) {
-        const completedCount = subtasks.filter((st) =>
+        const completedCount = (Array.isArray(subtasks) ? subtasks : []).filter((st) =>
           st.id === subtask.id ? nextCompleted : st.completed
         ).length;
         onTaskUpdated({
@@ -193,11 +195,11 @@ export default function TaskModal({
   const handleDeleteSubtask = async (subtaskId) => {
     try {
       await api.subtasks.delete(taskId, subtaskId);
-      setSubtasks((prev) => prev.filter((st) => st.id !== subtaskId));
+      setSubtasks((prev) => (Array.isArray(prev) ? prev.filter((st) => st.id !== subtaskId) : []));
       if (onTaskUpdated) {
         onTaskUpdated({
           ...task,
-          subtask_count: Math.max(0, subtasks.length - 1)
+          subtask_count: Math.max(0, (Array.isArray(subtasks) ? subtasks.length : 1) - 1)
         });
       }
     } catch (err) {
@@ -213,12 +215,12 @@ export default function TaskModal({
     setPostingComment(true);
     try {
       const newC = await api.comments.create(taskId, newCommentContent.trim());
-      setComments((prev) => [...prev, newC]);
+      setComments((prev) => (Array.isArray(prev) ? [...prev, newC] : [newC]));
       setNewCommentContent('');
       if (onTaskUpdated) {
         onTaskUpdated({
           ...task,
-          comment_count: (task.comment_count || 0) + 1
+          comment_count: ((task && task.comment_count) || 0) + 1
         });
       }
     } catch (err) {
@@ -228,9 +230,13 @@ export default function TaskModal({
     }
   };
 
-  const completedSubtasksCount = subtasks.filter((s) => s.completed).length;
+  const subtaskList = Array.isArray(subtasks) ? subtasks : [];
+  const commentList = Array.isArray(comments) ? comments : [];
+  const memberList = Array.isArray(projectMembers) ? projectMembers : [];
+
+  const completedSubtasksCount = subtaskList.filter((s) => s.completed).length;
   const subtaskProgressPercent =
-    subtasks.length > 0 ? Math.round((completedSubtasksCount / subtasks.length) * 100) : 0;
+    subtaskList.length > 0 ? Math.round((completedSubtasksCount / subtaskList.length) * 100) : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
@@ -323,10 +329,10 @@ export default function TaskModal({
                     <div className="flex items-center gap-2">
                       <CheckSquare className="w-4 h-4 text-indigo-400" />
                       <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                        Subtasks & Checklist ({completedSubtasksCount}/{subtasks.length})
+                        Subtasks & Checklist ({completedSubtasksCount}/{subtaskList.length})
                       </span>
                     </div>
-                    {subtasks.length > 0 && (
+                    {subtaskList.length > 0 && (
                       <span className="text-xs font-semibold text-indigo-400">
                         {subtaskProgressPercent}%
                       </span>
@@ -334,7 +340,7 @@ export default function TaskModal({
                   </div>
 
                   {/* Progress Bar */}
-                  {subtasks.length > 0 && (
+                  {subtaskList.length > 0 && (
                     <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-300 rounded-full"
@@ -345,7 +351,7 @@ export default function TaskModal({
 
                   {/* Subtask Items List */}
                   <div className="space-y-1.5 pt-1">
-                    {subtasks.map((st) => (
+                    {subtaskList.map((st) => (
                       <div
                         key={st.id}
                         className="flex items-center justify-between gap-3 p-2 rounded-lg bg-slate-900/60 hover:bg-slate-900 border border-slate-800/80 group transition-colors"
@@ -356,8 +362,9 @@ export default function TaskModal({
                         >
                           <button
                             type="button"
-                            className={`shrink-0 transition-colors ${st.completed ? 'text-emerald-400' : 'text-slate-400 hover:text-indigo-400'
-                              }`}
+                            className={`shrink-0 transition-colors ${
+                              st.completed ? 'text-emerald-400' : 'text-slate-400 hover:text-indigo-400'
+                            }`}
                           >
                             {st.completed ? (
                               <CheckCircle2 className="w-4 h-4 fill-emerald-500/20" />
@@ -366,8 +373,9 @@ export default function TaskModal({
                             )}
                           </button>
                           <span
-                            className={`text-xs truncate ${st.completed ? 'line-through text-slate-400' : 'text-slate-200'
-                              }`}
+                            className={`text-xs truncate ${
+                              st.completed ? 'line-through text-slate-400' : 'text-slate-200'
+                            }`}
                           >
                             {st.title}
                           </span>
@@ -408,18 +416,18 @@ export default function TaskModal({
                   <div className="flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-indigo-400" />
                     <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                      Activity & Comments ({comments.length})
+                      Activity & Comments ({commentList.length})
                     </h4>
                   </div>
 
                   {/* Comments Thread */}
                   <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
-                    {comments.length === 0 ? (
+                    {commentList.length === 0 ? (
                       <p className="text-xs text-slate-400 italic py-2">
                         No comments yet. Start the conversation below!
                       </p>
                     ) : (
-                      comments.map((c) => (
+                      commentList.map((c) => (
                         <div
                           key={c.id}
                           className="flex items-start gap-3 p-3 rounded-xl bg-slate-800/50 border border-slate-800/80"
@@ -483,7 +491,7 @@ export default function TaskModal({
                   <select
                     value={status}
                     onChange={(e) => handleQuickStatusChange(e.target.value)}
-                    className="w-full bg-slate-850 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-hidden focus:border-indigo-500"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-hidden focus:border-indigo-500"
                   >
                     <option value="todo">To Do</option>
                     <option value="in_progress">In Progress</option>
@@ -538,7 +546,7 @@ export default function TaskModal({
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-hidden focus:border-indigo-500"
                   >
                     <option value="">Unassigned</option>
-                    {projectMembers.map((m) => (
+                    {memberList.map((m) => (
                       <option key={m.user_id || m.id} value={m.user_id || m.id}>
                         {m.name} ({m.role || 'Member'})
                       </option>
@@ -620,4 +628,3 @@ export default function TaskModal({
     </div>
   );
 }
-

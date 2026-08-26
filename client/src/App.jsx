@@ -44,7 +44,7 @@ function MainApp() {
   const loadProjectsList = async () => {
     try {
       const data = await api.projects.list();
-      setProjects(data || []);
+      setProjects(Array.isArray(data) ? data : []);
     } catch {
       // Ignore initial background load errors
     }
@@ -69,6 +69,8 @@ function MainApp() {
     return <AuthPage />;
   }
 
+  const projectList = Array.isArray(projects) ? projects : [];
+
   const handleOpenProject = (projectId) => {
     setSelectedProjectId(projectId);
     setActiveView('project-detail');
@@ -79,19 +81,18 @@ function MainApp() {
   };
 
   const handleOpenCreateTask = (projectId = null) => {
-    setCreateTaskDefaultProjectId(projectId || selectedProjectId || (projects[0]?.id || null));
+    setCreateTaskDefaultProjectId(projectId || selectedProjectId || (projectList[0]?.id || null));
     setIsCreateTaskOpen(true);
   };
 
   const handleProjectCreated = (newProject) => {
-    setProjects((prev) => [newProject, ...prev]);
+    setProjects((prev) => (Array.isArray(prev) ? [newProject, ...prev] : [newProject]));
     setSelectedProjectId(newProject.id);
     setActiveView('project-detail');
   };
 
   const handleTaskCreated = (newTask, pId) => {
     loadProjectsList();
-    // If we're currently viewing the project, state will refresh via loadProjectData
   };
 
   // Get active page titles
@@ -102,7 +103,7 @@ function MainApp() {
     pageTitle = 'Projects Hub';
     pageSubtitle = 'All Workspaces & Deliverables';
   } else if (activeView === 'project-detail') {
-    const currentProj = projects.find((p) => p.id === selectedProjectId);
+    const currentProj = projectList.find((p) => p.id === selectedProjectId);
     pageTitle = currentProj ? currentProj.name : 'Project Workspace';
     pageSubtitle = currentProj?.category ? `${currentProj.category} Workspace` : 'Tasks & Team';
   } else if (activeView === 'my-tasks') {
@@ -124,7 +125,7 @@ function MainApp() {
         setActiveView={setActiveView}
         selectedProjectId={selectedProjectId}
         setSelectedProjectId={setSelectedProjectId}
-        projects={projects}
+        projects={projectList}
         onOpenCreateProject={() => setIsCreateProjectOpen(true)}
         isOpenMobile={isOpenMobile}
         setIsOpenMobile={setIsOpenMobile}
@@ -203,7 +204,7 @@ function MainApp() {
             loadProjectsList();
           }}
           projectMembers={
-            projects.find((p) => p.id === selectedProjectId)?.members || []
+            projectList.find((p) => p.id === selectedProjectId)?.members || []
           }
         />
       )}
@@ -214,9 +215,9 @@ function MainApp() {
         onClose={() => setIsCreateTaskOpen(false)}
         onTaskCreated={handleTaskCreated}
         defaultProjectId={createTaskDefaultProjectId}
-        projects={projects}
+        projects={projectList}
         members={
-          projects.find((p) => p.id === (createTaskDefaultProjectId || selectedProjectId))
+          projectList.find((p) => p.id === (createTaskDefaultProjectId || selectedProjectId))
             ?.members || []
         }
       />

@@ -14,6 +14,9 @@ export default function CreateTaskModal({
 }) {
   const { showToast } = useToast();
 
+  const projectList = Array.isArray(projects) ? projects : [];
+  const memberList = Array.isArray(members) ? members : [];
+
   const [projectId, setProjectId] = useState(defaultProjectId || '');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -29,10 +32,10 @@ export default function CreateTaskModal({
   useEffect(() => {
     if (defaultProjectId) {
       setProjectId(defaultProjectId);
-    } else if (projects.length > 0 && !projectId) {
-      setProjectId(projects[0].id);
+    } else if (projectList.length > 0 && !projectId) {
+      setProjectId(projectList[0].id);
     }
-  }, [defaultProjectId, projects]);
+  }, [defaultProjectId, projectList]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -100,7 +103,7 @@ export default function CreateTaskModal({
             disabled={!!defaultProjectId}
             className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-hidden focus:border-indigo-500 disabled:opacity-60"
           >
-            {projects.map((p) => (
+            {projectList.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>
@@ -184,7 +187,7 @@ export default function CreateTaskModal({
               className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-hidden focus:border-indigo-500"
             >
               <option value="">Unassigned</option>
-              {members.map((m) => (
+              {memberList.map((m) => (
                 <option key={m.user_id || m.id} value={m.user_id || m.id}>
                   {m.name} ({m.role || 'Member'})
                 </option>
@@ -258,4 +261,3 @@ export default function CreateTaskModal({
     </Modal>
   );
 }
-
