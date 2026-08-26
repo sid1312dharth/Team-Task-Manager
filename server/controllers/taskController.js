@@ -81,7 +81,7 @@ exports.getProjectTasks = async (req, res) => {
         u.role_title as assignee_role_title,
         c.name as creator_name,
         (SELECT COUNT(*) FROM subtasks WHERE task_id = t.id) as subtask_count,
-        (SELECT COUNT(*) FROM subtasks WHERE task_id = t.id AND completed = 1) as subtask_completed_count,
+        (SELECT COUNT(*) FROM subtasks WHERE task_id = t.id AND completed = true) as subtask_completed_count,
         (SELECT COUNT(*) FROM task_comments WHERE task_id = t.id) as comment_count
       FROM tasks t
       LEFT JOIN users u ON t.assigned_to = u.id
@@ -301,7 +301,7 @@ exports.getMyTasks = async (req, res) => {
         u.name as assignee_name,
         u.avatar_color as assignee_avatar_color,
         (SELECT COUNT(*) FROM subtasks WHERE task_id = t.id) as subtask_count,
-        (SELECT COUNT(*) FROM subtasks WHERE task_id = t.id AND completed = 1) as subtask_completed_count,
+        (SELECT COUNT(*) FROM subtasks WHERE task_id = t.id AND completed = true) as subtask_completed_count,
         (SELECT COUNT(*) FROM task_comments WHERE task_id = t.id) as comment_count
        FROM tasks t
        JOIN projects p ON t.project_id = p.id
@@ -332,10 +332,13 @@ exports.createSubtask = async (req, res) => {
   }
 
   try {
+    const isPg = db.dbType === 'postgres';
+    const defaultFalse = isPg ? false : 0;
     const result = await db.query(
-      'INSERT INTO subtasks (task_id, title, completed) VALUES ($1, $2, 0) RETURNING *',
-      [taskId, title.trim()]
+      'INSERT INTO subtasks (task_id, title, completed) VALUES ($1, $2, $3) RETURNING *',
+      [taskId, title.trim(), defaultFalse]
     );
+
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('createSubtask error:', err);
@@ -354,8 +357,9 @@ exports.updateSubtask = async (req, res) => {
     }
     const current = currentRes.rows[0];
 
+    const isPg = db.dbType === 'postgres';
     const updatedTitle = title !== undefined ? title.trim() : current.title;
-    const updatedCompleted = completed !== undefined ? (completed ? 1 : 0) : current.completed;
+    const updatedCompleted = completed !== undefined ? (isPg ? !!completed : (completed ? 1 : 0)) : current.completed;
 
     const result = await db.query(
       'UPDATE subtasks SET title = $1, completed = $2 WHERE id = $3 RETURNING *',

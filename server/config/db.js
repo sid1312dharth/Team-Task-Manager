@@ -30,10 +30,13 @@ const memoryStore = {
 if (process.env.DATABASE_URL && process.env.DATABASE_URL.trim().startsWith('postgres')) {
   try {
     const { Pool } = require('pg');
+    const dbUrl = process.env.DATABASE_URL.trim();
+    const isRemote = !/localhost|127\.0\.0\.1/.test(dbUrl);
+
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL.trim(),
+      connectionString: dbUrl,
       ssl:
-        process.env.NODE_ENV === 'production'
+        process.env.NODE_ENV === 'production' || isRemote
           ? { rejectUnauthorized: false }
           : false,
       max: 10,
@@ -149,7 +152,7 @@ async function query(text, params = []) {
  */
 function runMemoryQuery(sql, params) {
   const trimmed = sql.trim();
-  
+
   // SELECT
   if (/^SELECT/i.test(trimmed)) {
     if (/FROM users/i.test(trimmed)) {

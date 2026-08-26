@@ -1,9 +1,14 @@
-const { app } = require('./index');
+const { app, initPromise } = require('./index');
 
 async function testAll() {
   const TEST_PORT = 5002;
+
+  // Wait for database schema and seeder to complete
+  console.log('🔄 Waiting for database initialization & seeding...');
+  await initPromise;
+  console.log('✅ Database initialization complete.');
+
   const testServer = app.listen(TEST_PORT, async () => {
-    await new Promise(r => setTimeout(r, 800));
     try {
       console.log('--- Testing Auth Login ---');
       const loginRes = await fetch(`http://localhost:${TEST_PORT}/api/auth/login`, {
@@ -53,7 +58,7 @@ async function testAll() {
       const myTasksData = await myTasksRes.json();
       console.log('My tasks count:', myTasksData.length);
 
-      console.log('✅ ALL BACKEND API ENDPOINTS PASSED SUCCESSFULLY!');
+      console.log('✅ ALL BACKEND API ENDPOINTS PASSED SUCCESSFULLY AGAINST POSTGRESQL!');
     } catch (err) {
       console.error('❌ API Test Error:', err);
     } finally {

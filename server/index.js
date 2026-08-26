@@ -17,7 +17,7 @@ app.use(cors({
 app.use(express.json());
 
 // Initialize Database Schema & Seed Data
-(async () => {
+const initPromise = (async () => {
     try {
         await db.initSchema();
         await seedData();
@@ -78,4 +78,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { app, server };
+module.exports = { app, server, initPromise };
