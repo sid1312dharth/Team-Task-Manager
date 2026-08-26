@@ -1,0 +1,25 @@
+{
+  "name": "team-task-manager",
+  "version": "1.0.0",
+  "description": "Full-stack collaborative team task manager with Kanban sprints and role-based access",
+  "main": "server/index.js",
+  "scripts": {
+    "build": "npm --prefix client install && npm --prefix client run build && npm --prefix server install",
+    "start": "node server/index.js",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev"
+  },
+  "keywords": [
+    "task-manager",
+    "kanban",
+    "project-management",
+    "react",
+    "express",
+    "postgresql",
+    "sqlite",
+    "vercel",
+    "render"
+  ],
+  "author": "",
+  "license": "MIT"
+}

@@ -1,0 +1,49 @@
+services:
+  # 1. Backend REST API Web Service
+  - type: web
+    name: team-task-manager-api
+    env: node
+    plan: free
+    region: oregon
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: team-task-manager-db
+          property: connectionString
+
+  # 2. Frontend React Client (Static Site)
+  - type: web
+    name: team-task-manager-web
+    env: static
+    plan: free
+    region: oregon
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: team-task-manager-api
+          property: host
+          value: https://team-task-manager-api.onrender.com/api
+
+databases:
+  # 3. Free Managed PostgreSQL Database
+  - name: team-task-manager-db
+    plan: free
+    region: oregon
+    databaseName: taskmanager
+    user: taskmanager_user
+
